@@ -1,7 +1,5 @@
 package queue
 
-import "time"
-
 const (
 	MaxAttempts = 65535
 )
@@ -20,5 +18,5 @@ type TaskQueue interface {
 type Handler func(t Task) error
 
 type TaskInterface interface {
-	NextRunAt() (*time.Time, error)
+	Incr()
 }

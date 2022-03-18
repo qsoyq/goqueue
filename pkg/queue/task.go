@@ -1,7 +1,7 @@
 package queue
 
 import (
-	"errors"
+	"math/rand"
 	"time"
 )
 
@@ -12,11 +12,9 @@ type Task struct {
 	Data     interface{}
 }
 
-func (t Task) NextRunAt() (*time.Time, error) {
+func (t *Task) Incr() {
 	t.Attempts++
-	if t.Attempts >= MaxAttempts {
-		return nil, errors.New("max attempts")
-	}
-
-	return nil, nil
+	now := time.Now()
+	// TODO:　Add backoff
+	t.RunAt = now.Add(time.Duration(time.Second * time.Duration(rand.Intn(3)+1)))
 }

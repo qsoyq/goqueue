@@ -3,6 +3,7 @@ package queue
 import (
 	"container/heap"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -119,8 +120,18 @@ func (q *Queue) Pop(handler Handler) error {
 		case <-q.closeCh:
 			return q.ifClosed()
 		case t := <-q.sendq:
-			// TODO: recover 捕获 panic, 执行失败后要重新添加到队列
-			handler(t)
+			defer func() {
+				if err := recover(); err != nil {
+					fmt.Printf("run handler error: %s\n", err)
+					// 执行失败后要重新添加到队列
+					t.Incr()
+					q.Add(t)
+				}
+			}()
+			if err := handler(t); err != nil {
+				t.Incr()
+				q.Add(t)
+			}
 			return nil
 		}
 	}
