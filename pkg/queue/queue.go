@@ -52,11 +52,14 @@ func (q *Queue) loop() {
 	ticker := &time.Ticker{}
 	for {
 		q.mutex.Lock()
-		if q.heap.Len() == 0 {
+		count := q.heap.Len()
+		q.mutex.Unlock()
+
+		if count == 0 {
 			<-q.recv
-			q.mutex.Unlock()
-			continue
 		}
+
+		q.mutex.Lock()
 		task := q.heap.Pop().(Task)
 		q.mutex.Unlock()
 
@@ -72,13 +75,11 @@ func (q *Queue) loop() {
 				q.mutex.Lock()
 				q.heap.Push(task)
 				q.mutex.Unlock()
-				continue
 
 			case <-ticker.C:
 				if closed := q.tosend(task); closed {
 					return
 				}
-				continue
 
 			case <-q.closeCh:
 				return
