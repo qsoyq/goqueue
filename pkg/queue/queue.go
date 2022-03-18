@@ -14,7 +14,6 @@ const (
 )
 
 type Queue struct {
-	maxsize int
 	state   int
 	recv    chan struct{}
 	sendq   chan Task
@@ -24,9 +23,8 @@ type Queue struct {
 	heap    *TaskHeap
 }
 
-func NewQueue(maxsize int) *Queue {
+func NewQueue() *Queue {
 	q := &Queue{
-		maxsize: maxsize,
 		state:   Init,
 		recv:    make(chan struct{}),
 		sendq:   make(chan Task),
@@ -50,7 +48,7 @@ func (q *Queue) tosend(task Task) (isClosed bool) {
 }
 
 func (q *Queue) loop() {
-	ticker := &time.Ticker{}
+	ticker := time.NewTicker(time.Duration(1))
 	for {
 		q.mutex.Lock()
 		count := q.heap.Len()
@@ -61,6 +59,10 @@ func (q *Queue) loop() {
 		}
 
 		q.mutex.Lock()
+		if q.heap.Len() == 0 {
+			q.mutex.Unlock()
+			continue
+		}
 		task := q.heap.Pop().(Task)
 		q.mutex.Unlock()
 
@@ -168,4 +170,8 @@ func (q *Queue) ifClosed() error {
 		return errors.New(QueueClosedError)
 	}
 	return nil
+}
+
+func (q *Queue) IsClosed() bool {
+	return q.state == Closed
 }
