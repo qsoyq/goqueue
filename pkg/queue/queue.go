@@ -94,7 +94,7 @@ func (q *Queue) loop() {
 	}
 }
 
-func (q *Queue) Add(t Task) error {
+func (q *Queue) addtask(t Task) error {
 	if err := q.ifClosed(); err != nil {
 		return err
 	}
@@ -111,7 +111,16 @@ func (q *Queue) Add(t Task) error {
 	return nil
 }
 
+func (q *Queue) Add(data interface{}, duration uint) error {
+	task := NewTask(data, time.Duration(duration))
+	return q.addtask(task)
+}
+
 func (q *Queue) Pop(handler Handler) error {
+	if handler == nil {
+		return errors.New("handler can't be nil")
+	}
+
 	if err := q.ifClosed(); err != nil {
 		return err
 	}
@@ -125,12 +134,12 @@ func (q *Queue) Pop(handler Handler) error {
 					fmt.Printf("run handler error: %s\n", err)
 					// 执行失败后要重新添加到队列
 					t.Incr()
-					q.Add(t)
+					q.addtask(t)
 				}
 			}()
 			if err := handler(t); err != nil {
 				t.Incr()
-				q.Add(t)
+				q.addtask(t)
 			}
 			return nil
 		}

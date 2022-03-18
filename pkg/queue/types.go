@@ -9,7 +9,8 @@ const (
 )
 
 type TaskQueue interface {
-	Add(t *Task) error
+	Add(data interface{}) error
+	addtask(t *Task) error
 	Pop(handler Handler) error
 	Close() error
 	SafeClose() error
