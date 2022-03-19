@@ -103,7 +103,8 @@ func (q *Queue) addtask(t Task) error {
 	q.mutex.Lock()
 	heap.Push(q.heap, t)
 	q.mutex.Unlock()
-	// TODO: 需要写入不阻塞, 但每次写会覆盖
+	// TODO: 需要写入不阻塞, 但每次写会覆盖, 丢弃历史旧数据
+	// 如果在一次 loop 处理间隔期间, 有 N 个 Add 发生, loop 只期望接受到一次通知, 丢弃历史过期的消息
 	go func() {
 		select {
 		case q.recv <- struct{}{}:
@@ -126,25 +127,24 @@ func (q *Queue) Pop(handler Handler) error {
 	if err := q.ifClosed(); err != nil {
 		return err
 	}
-	for {
-		select {
-		case <-q.closeCh:
-			return q.ifClosed()
-		case t := <-q.sendq:
-			defer func() {
-				if err := recover(); err != nil {
-					fmt.Printf("run handler error: %s\n", err)
-					// 执行失败后要重新添加到队列
-					t.Incr()
-					q.addtask(t)
-				}
-			}()
-			if err := handler(t); err != nil {
+	select {
+	case <-q.closeCh:
+		return q.ifClosed()
+	case t := <-q.sendq:
+		defer func() {
+			if err := recover(); err != nil {
+				fmt.Printf("run handler error: %s\n", err)
+				// 执行失败后要重新添加到队列
 				t.Incr()
 				q.addtask(t)
 			}
-			return nil
+		}()
+		if err := handler(t); err != nil {
+			t.Incr()
+			q.addtask(t)
+			return err
 		}
+		return nil
 	}
 }
 
