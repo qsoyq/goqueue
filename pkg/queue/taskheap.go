@@ -12,12 +12,6 @@ func (h *TaskHeap) Push(x interface{}) {
 	*h = append(*h, x.(Task))
 }
 
-// func (h *TaskHeap) Pop() interface{} {
-// 	val := (*h)[h.Len()-1]
-// 	*h = (*h)[0 : h.Len()-1]
-// 	return val
-// }
-
 func (h *TaskHeap) Pop() interface{} {
 	old := *h
 	n := len(old)

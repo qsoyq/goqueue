@@ -63,7 +63,7 @@ func (q *Queue) loop() {
 			q.mutex.Unlock()
 			continue
 		}
-		task := q.heap.Pop().(Task)
+		task := heap.Pop(q.heap).(Task)
 		q.mutex.Unlock()
 
 		now := time.Now()
@@ -76,7 +76,7 @@ func (q *Queue) loop() {
 			select {
 			case <-q.recv:
 				q.mutex.Lock()
-				q.heap.Push(task)
+				heap.Push(q.heap, task)
 				q.mutex.Unlock()
 
 			case <-ticker.C:
@@ -115,7 +115,7 @@ func (q *Queue) addtask(t Task) error {
 }
 
 func (q *Queue) Add(data interface{}, duration uint) error {
-	task := NewTask(data, time.Duration(duration))
+	task := NewTask(data, time.Duration(time.Duration(duration)*time.Second))
 	return q.addtask(task)
 }
 
