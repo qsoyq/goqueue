@@ -1,4 +1,4 @@
-module github.com/goqueue
+module github.com/qsoyq/goqueue
 
 go 1.17
 
